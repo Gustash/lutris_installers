@@ -4,7 +4,7 @@ A collection of Lutris installers for various Windows games and apps.
 
 ## Available Installers
 
-- [VSeeFace](https://vseeface.icu)
+- [VSeeFace](https://www.vseeface.icu)
 
 ## Lutris YAML Syntax Docs
 
