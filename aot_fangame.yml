@@ -1,0 +1,31 @@
+name: AoT Fan Game
+game_slug: aot-fangame
+version: 0.25.0
+slug: aot-standalone
+runner: wine
+description: Installs Swammy AoT Fan Game
+
+script:
+  game:
+    exe: $GAMEDIR/drive_c/AOTFanGame/SwammysAOTV0.25.exe
+    arch: win64
+    prefix: $GAMEDIR
+
+  files:
+    # TODO: Find URL to download
+    - zip: 'N/A:Select zip'
+
+  installer:
+  - task:
+      name: create_prefix
+      arch: win64
+
+  - extract:
+      file: zip
+      dst: $GAMEDIR/drive_c/AOTFanGame
+
+  - task:
+      name: winetricks
+      app: vcrun2019
+      silent: true
+
