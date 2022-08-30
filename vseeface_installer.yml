@@ -14,7 +14,6 @@ script:
   # VSeeFace uses the Arial font to render text. You'll need to supply this yourself.
   files:
     - zip: https://github.com/emilianavt/VSeeFaceReleases/releases/download/v1.13.38/VSeeFace-v1.13.38.zip
-    - arial-font: "N/A:Select Arial.ttf"
 
   installer:
   - task:
@@ -31,9 +30,10 @@ script:
       args: '-c "rm ./drive_c/VSeeFace/VSeeFace_Data/Plugins/x86_64/GPUManagementPlugin.dll"'
       file: /bin/sh
 
-  - move:
-      src: arial-font
-      dst: $GAMEDIR/drive_c/windows/Fonts
+  - task:
+      name: winetricks
+      app: arial
+      silent: true
 
   - task:
       name: winetricks
