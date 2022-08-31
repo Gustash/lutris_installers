@@ -71,5 +71,5 @@ script:
         MimeType=x-scheme-handler/humble;
   # Make the previous .desktop the default handler for humble:// url schemes
   - execute:
-      args: '-c "xdg-mime default Humble-scheme-handler.desktop x-scheme-handler/humble"'
+      args: '-c "xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop"'
       file: /bin/sh
