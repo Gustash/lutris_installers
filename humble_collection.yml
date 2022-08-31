@@ -1,0 +1,75 @@
+name: Humble Games Collection
+game_slug: humble-games-collection
+version: Installer
+slug: humble-games-collection-windows
+runner: wine
+
+script:
+  files:
+  - ags: https://www.humblebundle.com/app/download
+  game:
+    arch: win64
+    exe: drive_c/users/$USER/AppData/Local/Programs/Humble App/Humble App.exe
+    args: --in-process-gpu
+    prefix: $GAMEDIR
+  system:
+    # Odd, but necessary. Without this you'll get a JS error and crash.
+    # You should be able to simply hide/minimize the terminal window, however.
+    terminal: true
+  installer:
+  - task:
+      arch: win64
+      name: create_prefix
+      prefix: $GAMEDIR
+  - task:
+      arch: win64
+      exclude_processes: Humble App.exe explorer.exe
+      executable: ags
+      name: wineexec
+      prefix: $GAMEDIR
+  # Script to handle humble:// scheme deep links
+  #
+  # The Humble App opens your web browser so you can login
+  # and allow the app access to your account.
+  #
+  # When you do allow access, it opens a humble://login?code=<YOUR_AUTH_CODE> url.
+  # The app expects a humble://login/code=<YOUR_AUTH_CODE> url, however (not sure how
+  # this even works on Windows).
+  #
+  # So this script also replaces the first ? with a / before forwarding the url to the Humble App.
+  #
+  # Do note a couple of things:
+  #
+  # - When the installer runs, it sets the wine binary from your default wine runner in the script.
+  #   This means that if you ever change your runner and need to login, you'll also need to change
+  #   the runner path in this script. This shouldn't come up too often, however, as you only need
+  #   this working for login. You should be safe to change whenever, as long as you're logged in.
+  # - It assumes you have Esync and Fsync enabled. This is because if you run the app with these
+  #   options, the script needs to sync with them as well, or wine will crash and it will not let
+  #   you login. Change these to "0" if you don't use either or any of them.
+  - write_file:
+      file: $GAMEDIR/handle-humble-scheme
+      content: |
+        #!/usr/bin/env sh
+        export WINEPREFIX="$GAMEDIR"
+        export WINEARCH="win64"
+        export WINE="$WINEBIN"
+        export WINEESYNC="1"
+        export WINEFSYNC="1"
+        fixed_scheme=$(echo "$@" | sed 's/?/\//')
+        exec "$WINEBIN" "$GAMEDIR/drive_c/users/$USER/AppData/Local/Programs/Humble App/Humble App.exe" "$fixed_scheme"
+  - chmodx: $GAMEDIR/handle-humble-scheme
+  # Create a .desktop file to handle humble:// url schemes
+  - write_file:
+      file: $HOME/.local/share/applications/Humble-scheme-handler.desktop
+      content: |
+        [Desktop Entry]
+        Name=Humble-scheme-handler
+        Exec=$GAMEDIR/handle-humble-scheme %u
+        Type=Application
+        NoDisplay=true
+        MimeType=x-scheme-handler/humble;
+  # Make the previous .desktop the default handler for humble:// url schemes
+  - execute:
+      args: '-c "xdg-mime default Humble-scheme-handler.desktop x-scheme-handler/humble"'
+      file: /bin/sh
