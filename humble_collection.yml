@@ -71,5 +71,5 @@ script:
         MimeType=x-scheme-handler/humble;
   # Make the previous .desktop the default handler for humble:// url schemes
   - execute:
-      args: '-c "if [ -z $(which xdg-settings) ]; then echo \"No xdg-settings. You are probably running in Flatpak. Run `xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop` manually in another terminal.\"; else xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop; fi"'
+      args: '-c "if command -v xdg-settings 1&>/dev/null; then xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop; else echo \"No xdg-settings. You are probably running in Flatpak. Run `xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop` manually in another terminal.\"; fi"'
       file: /bin/sh
