@@ -76,7 +76,7 @@ script:
         echo "$FIXED_SCHEME" >> ~/login.log
         ESCAPED_SCHEME="$(echo "${FIXED_SCHEME}" | \
                 sed 's/\//\\\//g' | \
-                sed 's/\&/\\\&/g')"
+                sed 's/\&/\\\^\\\&/g')"
         echo "$ESCAPED_SCHEME" >> ~/login.log
         echo ${ESCAPED_SCHEME}
         sed -i "s/^  args:.*$/  args: $(echo ${ESCAPED_SCHEME})/" ${CONFIG_FULL_PATH}
