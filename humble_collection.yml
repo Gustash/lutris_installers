@@ -9,13 +9,9 @@ script:
   - ags: https://www.humblebundle.com/app/download
   game:
     arch: win64
-    exe: drive_c/users/$USER/AppData/Local/Programs/Humble App/Humble App.exe
+    exe: start-humble.cmd
     args: --in-process-gpu
     prefix: $GAMEDIR
-  system:
-    # Odd, but necessary. Without this you'll get a JS error and crash.
-    # You should be able to simply hide/minimize the terminal window, however.
-    terminal: true
   installer:
   - task:
       arch: win64
@@ -51,14 +47,51 @@ script:
       file: $GAMEDIR/handle-humble-scheme
       content: |
         #!/usr/bin/env sh
-        export WINEPREFIX="$GAMEDIR"
-        export WINEARCH="win64"
-        export WINE="$WINEBIN"
-        export WINEESYNC="1"
-        export WINEFSYNC="1"
-        fixed_scheme=$(echo "$@" | sed 's/?/\//')
-        exec "$WINEBIN" "$GAMEDIR/drive_c/users/$USER/AppData/Local/Programs/Humble App/Humble App.exe" "$fixed_scheme"
+        set -e
+ 
+        function cleanup() {
+		# Restore original config
+		echo "Restoring original config"
+		cp "${CONFIG_FULL_PATH}" "${CONFIG_FULL_PATH}.fixed"
+		mv "${BACKUP_FILE_PATH}" "${CONFIG_FULL_PATH}"
+	}
+	LUTRIS_DB_PATH=~/.var/app/net.lutris.Lutris/data/lutris/pga.db
+	LUTRIS_CONFIGS=~/.var/app/net.lutris.Lutris/config/lutris/games/
+
+	# Find config file
+	CONFIGPATH=$(sqlite3 "$LUTRIS_DB_PATH" 'select configpath from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
+	CONFIG_FULL_PATH="${LUTRIS_CONFIGS}${CONFIGPATH}.yml"
+	if [ ! -f "$CONFIG_FULL_PATH" ]; then
+		echo "$CONFIG_FULL_PATH does not exist. Exiting."
+		exit 1
+	fi
+	# Backup original config
+	BACKUP_FILE_PATH="${CONFIG_FULL_PATH}.bak"
+	cp "${CONFIG_FULL_PATH}" "${BACKUP_FILE_PATH}"
+	echo "Backed up ${CONFIG_FULL_PATH} to ${BACKUP_FILE_PATH}"
+	trap cleanup EXIT
+	# Replace args with just url
+	echo "$1" > ~/login.log
+	FIXED_SCHEME="$(echo "$1" | sed 's/?/\//')"
+	echo "$FIXED_SCHEME" >> ~/login.log
+	ESCAPED_SCHEME="$(echo "${FIXED_SCHEME}" | \
+		sed 's/\//\\\//g' | \
+		sed 's/\&/\\\&/g')"
+	echo "$ESCAPED_SCHEME" >> ~/login.log
+	echo ${ESCAPED_SCHEME}
+	sed -i "s/^  args:.*$/  args: $(echo ${ESCAPED_SCHEME})/" ${CONFIG_FULL_PATH}
+	cat ${CONFIG_FULL_PATH}
+	# Launch through Lutris CLI
+	GAME_ID=$(sqlite3 "$LUTRIS_DB_PATH" 'select id from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
+	export LUTRIS_SKIP_INIT=1
+	flatpak run net.lutris.Lutris lutris:rungameid/${GAME_ID}
   - chmodx: $GAMEDIR/handle-humble-scheme
+  # Create a batch file to start the app with wineconsole, to avoid a JS crash
+  - write_file:
+      file: $GAMEDIR/start-humble.cmd
+      content: |
+        cd /d "%USERPROFILE%\AppData\Local\Programs\Humble App\"
+	start /min wineconsole "Humble App.exe" "%*"
   # Create a .desktop file to handle humble:// url schemes
   - write_file:
       file: $HOME/.local/share/applications/Humble-scheme-handler.desktop
