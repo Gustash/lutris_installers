@@ -23,26 +23,19 @@ script:
       executable: ags
       name: wineexec
       prefix: $GAMEDIR
+  - input_menu:
+      description: |
+        How did you install Lutris?
+
+        If you're using a Steam Deck, you've most likely installed with Flatpak.
+      id: LPATHS
+      options:
+        - "lutris,$HOME/.config/lutris/games/,$HOME/.local/share/lutris/pga.db": Native
+        - "flatpak run net.lutris.Lutris,$HOME/.var/app/net.lutris.Lutris/config/lutris/games/,$HOME/.var/app/net.lutris.Lutris/data/lutris/pga.db": Flatpak (Steam Deck)
   # Script to handle humble:// scheme deep links
   #
   # The Humble App opens your web browser so you can login
   # and allow the app access to your account.
-  #
-  # When you do allow access, it opens a humble://login?code=<YOUR_AUTH_CODE> url.
-  # The app expects a humble://login/code=<YOUR_AUTH_CODE> url, however (not sure how
-  # this even works on Windows).
-  #
-  # So this script also replaces the first ? with a / before forwarding the url to the Humble App.
-  #
-  # Do note a couple of things:
-  #
-  # - When the installer runs, it sets the wine binary from your default wine runner in the script.
-  #   This means that if you ever change your runner and need to login, you'll also need to change
-  #   the runner path in this script. This shouldn't come up too often, however, as you only need
-  #   this working for login. You should be safe to change whenever, as long as you're logged in.
-  # - It assumes you have Esync and Fsync enabled. This is because if you run the app with these
-  #   options, the script needs to sync with them as well, or wine will crash and it will not let
-  #   you login. Change these to "0" if you don't use either or any of them.
   - write_file:
       file: $GAMEDIR/handle-humble-scheme
       content: |
@@ -52,11 +45,10 @@ script:
         function cleanup() {
                 # Restore original config
                 echo "Restoring original config"
-                cp "${CONFIG_FULL_PATH}" "${CONFIG_FULL_PATH}.fixed"
                 mv "${BACKUP_FILE_PATH}" "${CONFIG_FULL_PATH}"
         }
-        LUTRIS_DB_PATH=~/.var/app/net.lutris.Lutris/data/lutris/pga.db
-        LUTRIS_CONFIGS=~/.var/app/net.lutris.Lutris/config/lutris/games/
+        IFS=,
+        read START_COMMAND LUTRIS_CONFIGS LUTRIS_DB_PATH <<< "$INPUT_LPATHS"
 
         # Find config file
         CONFIGPATH=$(sqlite3 "$LUTRIS_DB_PATH" 'select configpath from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
@@ -84,7 +76,7 @@ script:
         # Launch through Lutris CLI
         GAME_ID=$(sqlite3 "$LUTRIS_DB_PATH" 'select id from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
         export LUTRIS_SKIP_INIT=1
-        flatpak run net.lutris.Lutris lutris:rungameid/${GAME_ID}
+        bash -c "$START_COMMAND lutris:rungameid/${GAME_ID}"
   - chmodx: $GAMEDIR/handle-humble-scheme
   # Create a batch file to start the app with wineconsole, to avoid a JS crash
   - write_file:
