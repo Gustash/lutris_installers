@@ -50,48 +50,48 @@ script:
         set -e
  
         function cleanup() {
-		# Restore original config
-		echo "Restoring original config"
-		cp "${CONFIG_FULL_PATH}" "${CONFIG_FULL_PATH}.fixed"
-		mv "${BACKUP_FILE_PATH}" "${CONFIG_FULL_PATH}"
-	}
-	LUTRIS_DB_PATH=~/.var/app/net.lutris.Lutris/data/lutris/pga.db
-	LUTRIS_CONFIGS=~/.var/app/net.lutris.Lutris/config/lutris/games/
+                # Restore original config
+                echo "Restoring original config"
+                cp "${CONFIG_FULL_PATH}" "${CONFIG_FULL_PATH}.fixed"
+                mv "${BACKUP_FILE_PATH}" "${CONFIG_FULL_PATH}"
+        }
+        LUTRIS_DB_PATH=~/.var/app/net.lutris.Lutris/data/lutris/pga.db
+        LUTRIS_CONFIGS=~/.var/app/net.lutris.Lutris/config/lutris/games/
 
-	# Find config file
-	CONFIGPATH=$(sqlite3 "$LUTRIS_DB_PATH" 'select configpath from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
-	CONFIG_FULL_PATH="${LUTRIS_CONFIGS}${CONFIGPATH}.yml"
-	if [ ! -f "$CONFIG_FULL_PATH" ]; then
-		echo "$CONFIG_FULL_PATH does not exist. Exiting."
-		exit 1
-	fi
-	# Backup original config
-	BACKUP_FILE_PATH="${CONFIG_FULL_PATH}.bak"
-	cp "${CONFIG_FULL_PATH}" "${BACKUP_FILE_PATH}"
-	echo "Backed up ${CONFIG_FULL_PATH} to ${BACKUP_FILE_PATH}"
-	trap cleanup EXIT
-	# Replace args with just url
-	echo "$1" > ~/login.log
-	FIXED_SCHEME="$(echo "$1" | sed 's/?/\//')"
-	echo "$FIXED_SCHEME" >> ~/login.log
-	ESCAPED_SCHEME="$(echo "${FIXED_SCHEME}" | \
-		sed 's/\//\\\//g' | \
-		sed 's/\&/\\\&/g')"
-	echo "$ESCAPED_SCHEME" >> ~/login.log
-	echo ${ESCAPED_SCHEME}
-	sed -i "s/^  args:.*$/  args: $(echo ${ESCAPED_SCHEME})/" ${CONFIG_FULL_PATH}
-	cat ${CONFIG_FULL_PATH}
-	# Launch through Lutris CLI
-	GAME_ID=$(sqlite3 "$LUTRIS_DB_PATH" 'select id from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
-	export LUTRIS_SKIP_INIT=1
-	flatpak run net.lutris.Lutris lutris:rungameid/${GAME_ID}
+        # Find config file
+        CONFIGPATH=$(sqlite3 "$LUTRIS_DB_PATH" 'select configpath from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
+        CONFIG_FULL_PATH="${LUTRIS_CONFIGS}${CONFIGPATH}.yml"
+        if [ ! -f "$CONFIG_FULL_PATH" ]; then
+                echo "$CONFIG_FULL_PATH does not exist. Exiting."
+                exit 1
+        fi
+        # Backup original config
+        BACKUP_FILE_PATH="${CONFIG_FULL_PATH}.bak"
+        cp "${CONFIG_FULL_PATH}" "${BACKUP_FILE_PATH}"
+        echo "Backed up ${CONFIG_FULL_PATH} to ${BACKUP_FILE_PATH}"
+        trap cleanup EXIT
+        # Replace args with just url
+        echo "$1" > ~/login.log
+        FIXED_SCHEME="$(echo "$1" | sed 's/?/\//')"
+        echo "$FIXED_SCHEME" >> ~/login.log
+        ESCAPED_SCHEME="$(echo "${FIXED_SCHEME}" | \
+                sed 's/\//\\\//g' | \
+                sed 's/\&/\\\&/g')"
+        echo "$ESCAPED_SCHEME" >> ~/login.log
+        echo ${ESCAPED_SCHEME}
+        sed -i "s/^  args:.*$/  args: $(echo ${ESCAPED_SCHEME})/" ${CONFIG_FULL_PATH}
+        cat ${CONFIG_FULL_PATH}
+        # Launch through Lutris CLI
+        GAME_ID=$(sqlite3 "$LUTRIS_DB_PATH" 'select id from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
+        export LUTRIS_SKIP_INIT=1
+        flatpak run net.lutris.Lutris lutris:rungameid/${GAME_ID}
   - chmodx: $GAMEDIR/handle-humble-scheme
   # Create a batch file to start the app with wineconsole, to avoid a JS crash
   - write_file:
       file: $GAMEDIR/start-humble.cmd
       content: |
         cd /d "%USERPROFILE%\AppData\Local\Programs\Humble App\"
-	start /min wineconsole "Humble App.exe" "%*"
+        start /min wineconsole "Humble App.exe" "%*"
   # Create a .desktop file to handle humble:// url schemes
   - write_file:
       file: $HOME/.local/share/applications/Humble-scheme-handler.desktop
@@ -106,3 +106,4 @@ script:
   - execute:
       args: '-c "if command -v xdg-settings 1&>/dev/null; then xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop; else echo \"No xdg-settings. You are probably running in Flatpak. Run `xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop` manually in another terminal.\"; fi"'
       file: /bin/sh
+
