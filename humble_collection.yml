@@ -52,7 +52,7 @@ script:
 
         IFS="|"
         read GAME_ID CONFIGPATH <<< $(sqlite3 "$LUTRIS_DB_PATH" \
-          'select configpath, id
+          'select id, configpath
            from games
            where installer_slug = "humble-games-collection-windows"
            order by id asc
