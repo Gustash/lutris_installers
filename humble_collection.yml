@@ -83,7 +83,7 @@ script:
       file: $GAMEDIR/start-humble.cmd
       content: |
         cd /d "%USERPROFILE%\AppData\Local\Programs\Humble App\"
-        start /min wineconsole "Humble App.exe" "%*"
+        start "" "Humble App.exe" "%*"
   # Create a .desktop file to handle humble:// url schemes
   - write_file:
       file: $HOME/.local/share/applications/Humble-scheme-handler.desktop
