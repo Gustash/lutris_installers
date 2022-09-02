@@ -50,8 +50,15 @@ script:
         IFS=,
         read START_COMMAND LUTRIS_CONFIGS LUTRIS_DB_PATH <<< "$INPUT_LPATHS"
 
+        IFS="|"
+        read GAME_ID CONFIGPATH <<< $(sqlite3 "$LUTRIS_DB_PATH" \
+          'select configpath, id
+           from games
+           where installer_slug = "humble-games-collection-windows"
+           order by id asc
+           limit 1;')
+
         # Find config file
-        CONFIGPATH=$(sqlite3 "$LUTRIS_DB_PATH" 'select configpath from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
         CONFIG_FULL_PATH="${LUTRIS_CONFIGS}${CONFIGPATH}.yml"
         if [ ! -f "$CONFIG_FULL_PATH" ]; then
                 echo "$CONFIG_FULL_PATH does not exist. Exiting."
@@ -59,24 +66,19 @@ script:
         fi
         # Backup original config
         BACKUP_FILE_PATH="${CONFIG_FULL_PATH}.bak"
+        echo "Backing up ${CONFIG_FULL_PATH} to ${BACKUP_FILE_PATH}"
         cp "${CONFIG_FULL_PATH}" "${BACKUP_FILE_PATH}"
         echo "Backed up ${CONFIG_FULL_PATH} to ${BACKUP_FILE_PATH}"
         trap cleanup EXIT
         # Replace args with just url
-        echo "$1" > ~/login.log
         FIXED_SCHEME="$(echo "$1" | sed 's/?/\//')"
-        echo "$FIXED_SCHEME" >> ~/login.log
         ESCAPED_SCHEME="$(echo "${FIXED_SCHEME}" | \
                 sed 's/\//\\\//g' | \
                 sed 's/\&/\\\^\\\&/g')"
-        echo "$ESCAPED_SCHEME" >> ~/login.log
-        echo ${ESCAPED_SCHEME}
         sed -i "s/^  args:.*$/  args: $(echo ${ESCAPED_SCHEME})/" ${CONFIG_FULL_PATH}
         cat ${CONFIG_FULL_PATH}
         # Launch through Lutris CLI
-        GAME_ID=$(sqlite3 "$LUTRIS_DB_PATH" 'select id from games where installer_slug = "humble-games-collection-windows" order by id asc limit 1;')
-        export LUTRIS_SKIP_INIT=1
-        bash -c "$START_COMMAND lutris:rungameid/${GAME_ID}"
+        bash -c "env LUTRIS_SKIP_INIT=1 $START_COMMAND lutris:rungameid/${GAME_ID}"
   - chmodx: $GAMEDIR/handle-humble-scheme
   # Create a batch file to start the app with wineconsole, to avoid a JS crash
   - write_file:
