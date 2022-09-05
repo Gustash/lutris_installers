@@ -4,9 +4,9 @@ A collection of Lutris installers for various Windows games and apps.
 
 ## Available Installers
 
-- [VSeeFace](https://www.vseeface.icu)
+- [VSeeFace](https://lutris.net/games/vseeface/)
 
-- [Humble Games Collection](https://www.humblebundle.com/membership/collection)
+- [Humble Games Collection](https://lutris.net/games/humble-games-collection/)
 
 ## Lutris YAML Syntax Docs
 
