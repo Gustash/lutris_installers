@@ -5,6 +5,10 @@ slug: humble-games-collection-windows
 runner: wine
 
 script:
+  install_complete_text: |
+    Installation complete.
+
+    After allowing access from your browser, you should open the link with the "Humble Games Collection (Login)" app.
   files:
   - ags: https://www.humblebundle.com/app/download
   game:
@@ -23,15 +27,6 @@ script:
       executable: ags
       name: wineexec
       prefix: $GAMEDIR
-  - input_menu:
-      description: |
-        How did you install Lutris?
-
-        If you're using a Steam Deck, you've most likely installed with Flatpak.
-      id: LPATHS
-      options:
-        - "lutris,$HOME/.config/lutris/games/,$HOME/.local/share/lutris/pga.db": Native
-        - "flatpak run net.lutris.Lutris,$HOME/.var/app/net.lutris.Lutris/config/lutris/games/,$HOME/.var/app/net.lutris.Lutris/data/lutris/pga.db": Flatpak (Steam Deck)
   # Script to handle humble:// scheme deep links
   #
   # The Humble App opens your web browser so you can login
@@ -41,63 +36,39 @@ script:
       content: |
         #!/usr/bin/env sh
         set -e
- 
-        function cleanup() {
-                # Restore original config
-                echo "Restoring original config"
-                mv "${BACKUP_FILE_PATH}" "${CONFIG_FULL_PATH}"
-        }
-        IFS=,
-        read START_COMMAND LUTRIS_CONFIGS LUTRIS_DB_PATH <<< "$INPUT_LPATHS"
-
-        IFS="|"
-        read GAME_ID CONFIGPATH <<< $(sqlite3 "$LUTRIS_DB_PATH" \
-          'select id, configpath
-           from games
-           where installer_slug = "humble-games-collection-windows"
-           order by id asc
-           limit 1;')
-
-        # Find config file
-        CONFIG_FULL_PATH="${LUTRIS_CONFIGS}${CONFIGPATH}.yml"
-        if [ ! -f "$CONFIG_FULL_PATH" ]; then
-                echo "$CONFIG_FULL_PATH does not exist. Exiting."
-                exit 1
-        fi
-        # Backup original config
-        BACKUP_FILE_PATH="${CONFIG_FULL_PATH}.bak"
-        echo "Backing up ${CONFIG_FULL_PATH} to ${BACKUP_FILE_PATH}"
-        cp "${CONFIG_FULL_PATH}" "${BACKUP_FILE_PATH}"
-        echo "Backed up ${CONFIG_FULL_PATH} to ${BACKUP_FILE_PATH}"
-        trap cleanup EXIT
-        # Replace args with just url
+        export LUTRIS_SKIP_INIT=1
+        LUTRIS_CMD="lutris:rungame/humble-games-collection"
         FIXED_SCHEME="$(echo "$1" | sed 's/?/\//')"
-        ESCAPED_SCHEME="$(echo "${FIXED_SCHEME}" | \
-                sed 's/\//\\\//g' | \
-                sed 's/\&/\\\^\\\&/g')"
-        sed -i "s/^  args:.*$/  args: $(echo ${ESCAPED_SCHEME})/" ${CONFIG_FULL_PATH}
-        cat ${CONFIG_FULL_PATH}
-        # Launch through Lutris CLI
-        bash -c "env LUTRIS_SKIP_INIT=1 $START_COMMAND lutris:rungameid/${GAME_ID}"
+ 
+        echo "$FIXED_SCHEME" > $GAMEDIR/drive_c/.auth
+        if command -v lutris 1&>/dev/null; then
+          lutris $LUTRIS_CMD
+        else
+          flatpak run net.lutris.Lutris $LUTRIS_CMD
+        fi
   - chmodx: $GAMEDIR/handle-humble-scheme
   # Create a batch file to start the app with wineconsole, to avoid a JS crash
   - write_file:
       file: $GAMEDIR/start-humble.cmd
       content: |
+        @echo off
         cd /d "%USERPROFILE%\AppData\Local\Programs\Humble App\"
-        start "" "Humble App.exe" "%*"
+        set /p Url=<"C:\.auth"
+        if defined Url (
+          start "" "Humble App.exe" "%Url%"
+          del "C:\.auth"
+        ) else (
+          start "" "Humble App.exe" "%*"
+        )
   # Create a .desktop file to handle humble:// url schemes
   - write_file:
       file: $HOME/.local/share/applications/Humble-scheme-handler.desktop
       content: |
         [Desktop Entry]
-        Name=Humble-scheme-handler
+        Name=Humble Games Collection (Login)
+        Comment=Target for handling Humble Games Collection logins. You should not run this manually.
         Exec=$GAMEDIR/handle-humble-scheme %u
         Type=Application
-        NoDisplay=true
+        Icon=lutris_humble-games-collection
         MimeType=x-scheme-handler/humble;
-  # Make the previous .desktop the default handler for humble:// url schemes
-  - execute:
-      args: '-c "if command -v xdg-settings 1&>/dev/null; then xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop; else echo \"No xdg-settings. You are probably running in Flatpak. Run `xdg-settings set default-url-scheme-handler humble Humble-scheme-handler.desktop` manually in another terminal.\"; fi"'
-      file: /bin/sh
 
