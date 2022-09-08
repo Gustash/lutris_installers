@@ -5,10 +5,10 @@ slug: humble-games-collection-windows
 runner: wine
 
 script:
-  install_complete_text: |
-    Installation complete.
+  install_complete_text: 'Installation complete.
 
-    After allowing access from your browser, you should open the link with the "Humble Games Collection (Login)" app.
+
+    After allowing access from your browser, you should open the link with the "Humble Games Collection (Login)" app.'
   files:
   - ags: https://www.humblebundle.com/app/download
   game:
@@ -33,42 +33,63 @@ script:
   # and allow the app access to your account.
   - write_file:
       file: $GAMEDIR/handle-humble-scheme
-      content: |
-        #!/usr/bin/env sh
+      content: '#!/usr/bin/env sh
+
         set -e
+
         export LUTRIS_SKIP_INIT=1
+
         LUTRIS_CMD="lutris:rungame/humble-games-collection"
-        FIXED_SCHEME="$(echo "$1" | sed 's/?/\//')"
+
+        FIXED_SCHEME="$(echo "$1" | sed "s/?/\//")"
  
+
         echo "$FIXED_SCHEME" > $GAMEDIR/drive_c/.auth
+
         if command -v lutris 1&>/dev/null; then
+
           lutris $LUTRIS_CMD
+
         else
+
           flatpak run net.lutris.Lutris $LUTRIS_CMD
-        fi
+
+        fi'
   - chmodx: $GAMEDIR/handle-humble-scheme
   # Create a batch file to start the app with wineconsole, to avoid a JS crash
   - write_file:
       file: $GAMEDIR/start-humble.cmd
-      content: |
-        @echo off
+      content: '@echo off
+
         cd /d "%USERPROFILE%\AppData\Local\Programs\Humble App\"
+
         set /p Url=<"C:\.auth"
+
         if defined Url (
+
           start "" "Humble App.exe" "%Url%"
+
           del "C:\.auth"
+
         ) else (
+
           start "" "Humble App.exe" "%*"
-        )
+
+        )'
   # Create a .desktop file to handle humble:// url schemes
   - write_file:
       file: $HOME/.local/share/applications/Humble-scheme-handler.desktop
-      content: |
-        [Desktop Entry]
+      content: '[Desktop Entry]
+
         Name=Humble Games Collection (Login)
+
         Comment=Target for handling Humble Games Collection logins. You should not run this manually.
+
         Exec=$GAMEDIR/handle-humble-scheme %u
+
         Type=Application
+
         Icon=lutris_humble-games-collection
-        MimeType=x-scheme-handler/humble;
+
+        MimeType=x-scheme-handler/humble;'
 
