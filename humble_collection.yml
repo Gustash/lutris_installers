@@ -25,6 +25,7 @@ script:
       arch: win64
       exclude_processes: Humble App.exe explorer.exe
       executable: ags
+      args: /S
       name: wineexec
       prefix: $GAMEDIR
   # Script to handle humble:// scheme deep links
