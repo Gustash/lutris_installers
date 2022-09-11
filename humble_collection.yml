@@ -47,7 +47,7 @@ script:
 
         echo "$FIXED_SCHEME" > $GAMEDIR/drive_c/.auth
 
-        if command -v lutris 1&>/dev/null; then
+        if command -v lutris 1>/dev/null; then
 
           lutris $LUTRIS_CMD
 
