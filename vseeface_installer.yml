@@ -1,7 +1,7 @@
 name: VSeeFace
 game_slug: vseeface
-version: 1.13.38
-slug: vseeface-standalone
+version: windows
+slug: vseeface-windows
 runner: wine
 description: Installs VSeeFace
 
@@ -13,7 +13,7 @@ script:
 
   # VSeeFace uses the Arial font to render text. You'll need to supply this yourself.
   files:
-    - zip: https://github.com/emilianavt/VSeeFaceReleases/releases/download/v1.13.38/VSeeFace-v1.13.38.zip
+    - zip: https://github.com/emilianavt/VSeeFaceReleases/releases/download/v1.13.38b/VSeeFace-v1.13.38b.zip
 
   installer:
   - task:
@@ -23,12 +23,6 @@ script:
   - extract:
       file: zip
       dst: $GAMEDIR/drive_c/VSeeFace
-
-  # On v1.13.37c and later, it is necessary to delete GPUManagementPlugin.dll to be able to run VSeeFace with wine.
-  # This will be fixed in the future.
-  - execute:
-      args: '-c "rm ./drive_c/VSeeFace/VSeeFace_Data/Plugins/x86_64/GPUManagementPlugin.dll"'
-      file: /bin/sh
 
   - task:
       name: winetricks
